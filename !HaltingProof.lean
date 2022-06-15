@@ -22,22 +22,27 @@ end
 
 /- Inductive Types: DLDS-Node -/
 inductive node
-| vertex (NUMBER : ℕ)
+| vertex (LEVEL : ℕ)
+         (LABEL : ℕ)
          (FORMULA : formula)
 export node (vertex)
-notation NUMBER :: FORMULA := node.vertex NUMBER FORMULA
+notation LEVEL :: LABEL :: FORMULA := node.vertex LEVEL LABEL FORMULA
 /- Instances of Decidability (Equality): DLDS-Node -/
 instance node.decidable_eq :
   ∀(n1 n2 : node),
   ---------------------------------
   decidable (n1 = n2)
 -- VERTEX:
-| (vertex NBR_1 FML_1) (vertex NBR_2 FML_2) := begin
+| (vertex LVL_1 LBL_1 FML_1) (vertex LVL_2 LBL_2 FML_2) := begin
   simp [eq.decidable],
-  from @and.decidable (NBR_1 = NBR_2)
-                      (FML_1 = FML_2)
-                      (@nat.decidable_eq NBR_1 NBR_2)
-                      (@formula.decidable_eq FML_1 FML_2)
+  have decidable_and, from @and.decidable (LBL_1 = LBL_2)
+                                          (FML_1 = FML_2)
+                                          (@nat.decidable_eq LBL_1 LBL_2)
+                                          (@formula.decidable_eq FML_1 FML_2),
+  from @and.decidable (LVL_1 = LVL_2)
+                      (LBL_1 = LBL_2 ∧ FML_1 = FML_2)
+                      (@nat.decidable_eq LVL_1 LVL_2)
+                      (decidable_and)
 end
 
 /- Inductive Types: Dag-Like Derivability Structure -/
@@ -108,52 +113,64 @@ def list_deduction_paint : list deduction → ℕ → list deduction
 /- Neighborhood: ⊇-Elimination -/
 def case_neighborhood_01 : neighborhood → Prop
 | (dag CTR IN OUT ANC) := ( ∃(antecedent consequent : formula),
-                            ∃(center minor major : ℕ),
+                            ∃(level center minor major : ℕ),
                             ∃(dep_minor dep_major : set formula),
                             ∃(out : node),
                           ------------------------------------------------------
-                            CTR = center::consequent
-                          ∧ IN = [ arrow (minor::antecedent) CTR [] dep_minor,
-                                   arrow (major::(antecedent>>consequent)) CTR [] dep_major ]
+                            CTR = vertex level center consequent
+                          ∧ IN = [ arrow (vertex level minor antecedent) CTR [] dep_minor,
+                                   arrow (vertex level major (antecedent>>consequent)) CTR [] dep_major ]
                           ∧ OUT = [(arrow CTR out [] (dep_minor ∪ dep_major))]
                           ∧ ANC = [] )
 /- Neighborhood: ⊇-Introduction -/
 def case_neighborhood_02 : neighborhood → Prop
 | (dag CTR IN OUT ANC) := ( ∃(antecedent consequent : formula),
-                            ∃(center intro : ℕ),
+                            ∃(level center intro : ℕ),
                             ∃(dep : set formula),
                             ∃(out : node),
                           ------------------------------------------------------
-                            CTR = center::(antecedent>>consequent)
-                          ∧ IN = [arrow (intro::antecedent) CTR [] {x | x = antecedent ∨ x ∈ dep}]
+                            CTR = vertex level center (antecedent>>consequent)
+                          ∧ IN = [arrow (vertex level intro antecedent) CTR [] {x | x = antecedent ∨ x ∈ dep}]
                           ∧ OUT = [arrow CTR out [] {x | x ≠ antecedent ∧ x ∈ dep}]
                           ∧ ANC = [] )
 /- Neighborhood: Hypothesis -/
 def case_neighborhood_03 : neighborhood → Prop
 | (dag CTR IN OUT ANC) := ( ∃(hypothesis : formula),
-                            ∃(center : ℕ),
+                            ∃(level center : ℕ),
                             ∃(out : node),
                           ------------------------------------------------------
-                            CTR = center::hypothesis
+                            CTR = vertex level center hypothesis
+                          ∧ IN = []
+                          ∧ OUT = [arrow CTR out [] {hypothesis}]
+                          ∧ ANC = [] )
+/- Neighborhood: Collapse -/
+def case_neighborhood_04 : neighborhood → Prop
+| (dag CTR IN OUT ANC) := ( ∃(hypothesis : formula),
+                            ∃(level center : ℕ),
+                            ∃(out : node),
+                          ------------------------------------------------------
+                            CTR = vertex level center hypothesis
                           ∧ IN = []
                           ∧ OUT = [arrow CTR out [] {hypothesis}]
                           ∧ ANC = [] )
 /- Pre-Colapso Simples (sem Arestas de Ancestralidade): -/
-def node.get_number : node → ℕ
-| (NUMBER::FORMULA):= NUMBER
+def node.get_level : node → ℕ
+| (vertex LEVEL LABEL FORMULA):= LEVEL
+def node.get_label : node → ℕ
+| (vertex LEVEL LABEL FORMULA):= LABEL
 def loop_create_ancestral : deduction → deduction → ancestral
 | (arrow IN_STR IN_END IN_CLR IN_DEP)
   (arrow OUT_STR OUT_END OUT_CLR OUT_DEP) := path OUT_END
                                                   IN_STR
-                                                  [node.get_number OUT_END]
+                                                  [node.get_label OUT_END]
 def simple_create_ancestral : list deduction → list deduction → list ancestral
 | (HEAD::TAIL) [OUT] := (loop_create_ancestral HEAD OUT)::(simple_create_ancestral TAIL [OUT])
 | IN OUT := []
 def simple_pre_collapse : neighborhood → neighborhood
-| (dag (NBR::FML) IN OUT ANC) := dag (NBR::FML)
-                                     IN
-                                     (list_deduction_paint OUT NBR)
-                                     (simple_create_ancestral IN OUT)
+| (dag (vertex LVL LBL FML) IN OUT ANC) := dag (vertex LVL LBL FML)
+                                           IN
+                                           (list_deduction_paint OUT LVL)
+                                           (simple_create_ancestral IN OUT)
 
 /- NEW Rule: ⊇-Elimination = ⊇-Elimination -/
 def case_01_01 : neighborhood → neighborhood → Prop
@@ -191,14 +208,3 @@ def case_03_03 : neighborhood → neighborhood → Prop
        ∧ ( case_neighborhood_03 V )
 def case_03_03S : neighborhood → neighborhood → Prop
 | L R := case_03_03 R L
-
-
-/- Colapso Simples (com Arestas de Ancestralidade): -/
-/- Rule 05 -/
---BUGADO!! A regra não está genérica o bastante (paper do hermann)...
-
-
-/- Colapso de Arestas de Ancestralidade Incidentes: -/
-
-
-/- Colapso de Arestas de Dedução: -/

@@ -1,3 +1,6 @@
+import init.data.nat
+import init.data.set
+
 /- Types -/
 /- Inductive Types: Formula -/
 inductive formula
@@ -214,7 +217,7 @@ def loop_loop_ancestral_set : deduction → deduction → ancestral
 | (edge IN_STR IN_END IN_CLR IN_DEP)
   (edge OUT_STR OUT_END OUT_CLR OUT_DEP) := path OUT_END
                                                  IN_STR
-                                                 OUT_CLR --AQUI!!!
+                                                 OUT_CLR
 def loop_ancestral_set : deduction → list deduction → list ancestral
 | IN [] := []
 | IN (HEAD::TAIL) := (loop_loop_ancestral_set IN HEAD)::(loop_ancestral_set IN TAIL)
@@ -223,27 +226,29 @@ def ancestral_set : list deduction → list deduction → list ancestral
 | (HEAD::TAIL) OUT := (loop_ancestral_set HEAD OUT) ++ (ancestral_set TAIL OUT)
 /- Neighborhood: Type 1 Collapsed Node -/
 def neighborhood_type_01 : neighborhood → Prop
-| (dag (vertex LVL NBR FML) IN OUT ANC) := ( IN = IN --AQUI!!!
-                                           ∧ OUT = OUT --AQUI!!!
+| (dag (vertex LVL NBR FML) IN OUT ANC) := ( IN = IN
+                                           ∧ OUT = OUT
                                            ∧ list.length ANC = list.length IN
-                                           --∧ ANC = ancestral_set IN OUT ) --AQUI!!!
                                            ∧ ∀(a : ancestral), a ∈ ANC → a ∈ ancestral_set IN OUT )
 
 
 
 /- Proofs -/
-lemma Lemma_Add :
+lemma Add_Lemma :
   ∀{n : ℕ},
   ---------------------------
   ¬( n+1 = n )
-| 0 := by simp
+| 0 := begin
+  rewrite[nat.add_one 0],
+  from nat.one_ne_zero,
+end
 | (n+1) := begin
   rewrite[←nat.succ_eq_add_one (n+1)],
   rewrite[←nat.succ_eq_add_one n],
   simp at ⊢,
-  from Lemma_Add
+  from Add_Lemma,
 end
-lemma Lemma_Sub :
+lemma Sub_Lemma :
   ∀{n : ℕ},
   ( n > 0 ) →
   ---------------------------
@@ -294,16 +299,16 @@ theorem Main_Theorem_Rule_01 :
 
   rewrite [prop_in_v],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Add],
+  simp [node_rewrite, Add_Lemma],
 
   rewrite [prop_out_v],
   simp [list_deduction_paint, deduction_paint, colour_paint],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Sub_Lemma prop_lvl_v],
 
   simp [create_ancestral, loop_ancestral],
   simp [list_ancestral_rewrite, ancestral_rewrite],
-  simp [node_rewrite, Lemma_Add, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Add_Lemma, Sub_Lemma prop_lvl_v],
 
   simp [introduction_neighborhood] at prop_u,
   cases prop_u with antecedent_u prop_u,
@@ -364,16 +369,16 @@ theorem Main_Theorem_Rule_02 :
 
   rewrite [prop_in_v],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Add],
+  simp [node_rewrite, Add_Lemma],
 
   rewrite [prop_out_v],
   simp [list_deduction_paint, deduction_paint, colour_paint],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Sub_Lemma prop_lvl_v],
   
   simp [create_ancestral, loop_ancestral],
   simp [list_ancestral_rewrite, ancestral_rewrite],
-  simp [node_rewrite, Lemma_Add, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Add_Lemma, Sub_Lemma prop_lvl_v],
 
   simp [hypothesis_neighborhood] at prop_u,
   cases prop_u with out_frm_u prop_u,
@@ -427,7 +432,7 @@ theorem Main_Theorem_Rule_03 :
   rewrite [prop_out_v],
   simp [list_deduction_paint, deduction_paint, colour_paint],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Sub_Lemma prop_lvl_v],
   
   simp [create_ancestral, loop_ancestral],
   simp [list_ancestral_rewrite, ancestral_rewrite],
@@ -487,7 +492,7 @@ theorem Main_Theorem_Rule_04 :
   rewrite [prop_out_v],
   simp [list_deduction_paint, deduction_paint, colour_paint],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Sub_Lemma prop_lvl_v],
   
   simp [create_ancestral, loop_ancestral],
   simp [list_ancestral_rewrite, ancestral_rewrite],
@@ -536,16 +541,16 @@ theorem Main_Theorem_New_Rule_01 :
 
   rewrite [prop_in_v],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Add],
+  simp [node_rewrite, Add_Lemma],
 
   rewrite [prop_out_v],
   simp [list_deduction_paint, deduction_paint, colour_paint],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Sub_Lemma prop_lvl_v],
   
   simp [create_ancestral, loop_ancestral],
   simp [list_ancestral_rewrite, ancestral_rewrite],
-  simp [node_rewrite, Lemma_Add, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Add_Lemma, Sub_Lemma prop_lvl_v],
 
   simp [elimination_neighborhood] at prop_u,
   cases prop_u with antecedent_u prop_u,
@@ -608,16 +613,16 @@ theorem Main_Theorem_New_Rule_02 :
 
   rewrite [prop_in_v],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Add],
+  simp [node_rewrite, Add_Lemma],
 
   rewrite [prop_out_v],
   simp [list_deduction_paint, deduction_paint, colour_paint],
   simp [list_deduction_rewrite, deduction_rewrite],
-  simp [node_rewrite, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Sub_Lemma prop_lvl_v],
   
   simp [create_ancestral, loop_ancestral],
   simp [list_ancestral_rewrite, ancestral_rewrite],
-  simp [node_rewrite, Lemma_Add, Lemma_Sub prop_lvl_v],
+  simp [node_rewrite, Add_Lemma, Sub_Lemma prop_lvl_v],
 
   simp [introduction_neighborhood] at prop_u,
   cases prop_u with antecedent_u prop_u,

@@ -237,3 +237,5 @@ def neighborhood_type_01 : neighborhood → Prop
                                            ∧ OUT = OUT
                                            ∧ list.length ANC = list.length IN
                                            ∧ ∀(a : ancestral), a ∈ ANC → a ∈ ancestral_set IN OUT )
+                                           
+/- Continues at !HaltingProof[Example][Web][Part2].lean -/
